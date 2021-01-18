@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, usize};
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Default)]
@@ -113,5 +113,19 @@ impl Row {
         }
         self.len = length;
         self.string = result;
+    }
+
+    pub fn find(&self, query: &str) -> Option<usize> {
+        let matching_byte_index = self.string.find(query);
+        if let Some(matching_byte_index) = matching_byte_index {
+            for (grapheme_index, (byte_index, _)) in
+                self.string[..].grapheme_indices(true).enumerate()
+            {
+                if matching_byte_index == byte_index {
+                    return Some(grapheme_index);
+                }
+            }
+        }
+        None
     }
 }
