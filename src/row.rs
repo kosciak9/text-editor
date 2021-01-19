@@ -1,6 +1,8 @@
 use std::{cmp, usize};
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::SearchDirection;
+
 #[derive(Default)]
 pub struct Row {
     string: String,
@@ -115,14 +117,42 @@ impl Row {
         self.string = result;
     }
 
-    pub fn find(&self, query: &str) -> Option<usize> {
-        let matching_byte_index = self.string.find(query);
+    pub fn find(&self, query: &str, at: usize, direction: SearchDirection) -> Option<usize> {
+        if at > self.len {
+            return None;
+        }
+
+        let start = if direction == SearchDirection::Forward {
+            at
+        } else {
+            0
+        };
+        let end = if direction == SearchDirection::Forward {
+            self.len
+        } else {
+            at
+        };
+
+        #[allow(clippy::integer_arithmetic)]
+        let substring: String = self.string[..]
+            .graphemes(true)
+            .skip(start)
+            .take(end - start)
+            .collect();
+
+        let matching_byte_index = if direction == SearchDirection::Forward {
+            substring.find(query)
+        } else {
+            substring.rfind(query)
+        };
+
         if let Some(matching_byte_index) = matching_byte_index {
             for (grapheme_index, (byte_index, _)) in
-                self.string[..].grapheme_indices(true).enumerate()
+                substring[..].grapheme_indices(true).enumerate()
             {
                 if matching_byte_index == byte_index {
-                    return Some(grapheme_index);
+                    #[allow(clippy::integer_arithmetic)]
+                    return Some(start + grapheme_index);
                 }
             }
         }
